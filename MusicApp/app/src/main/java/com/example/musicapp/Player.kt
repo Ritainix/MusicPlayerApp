@@ -176,7 +176,8 @@ class Player : AppCompatActivity() {
             sname = mySongs!![position].name.substringBeforeLast(".")
             txtSName.text = sname
 
-            txtSName.text = sname
+            seekMusic.progress = 0
+            seekMusic.max = mediaPlayer?.duration ?: 0
             mediaPlayer?.start()
             btnPlay.setBackgroundResource(R.drawable.pause)
         }
@@ -196,7 +197,9 @@ class Player : AppCompatActivity() {
             sname = mySongs!![position].name.substringBeforeLast(".")
             txtSName.text = sname
 
-            txtSName.text = sname
+            seekMusic.progress = 0
+            seekMusic.max = mediaPlayer?.duration ?: 0
+
             mediaPlayer?.start()
             btnPlay.setBackgroundResource(R.drawable.pause)
         }
