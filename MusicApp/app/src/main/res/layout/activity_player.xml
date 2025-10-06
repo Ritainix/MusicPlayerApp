@@ -105,21 +105,13 @@
                 android:layout_marginTop="15dp"
                 android:background="@drawable/previous"/>
             <Button
-                android:id="@+id/fastforwardButton"
-                android:layout_toRightOf="@id/nextButton"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
-                android:layout_marginTop="20dp"
-                android:layout_marginLeft="15dp"
-                android:background="@drawable/fastforward"/>
-            <Button
-                android:id="@+id/previousforwardButton"
+                android:id="@+id/shuffleButton"
                 android:layout_toLeftOf="@id/previousButton"
                 android:layout_width="40dp"
                 android:layout_height="40dp"
                 android:layout_marginTop="20dp"
                 android:layout_marginRight="15dp"
-                android:background="@drawable/fastrewind"/>
+                android:background="@drawable/shuffleoff"/>
 
 
 
