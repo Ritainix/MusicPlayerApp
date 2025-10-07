@@ -47,4 +47,5 @@ dependencies {
     androidTestImplementation(libs.androidx.espresso.core)
 
     implementation("com.karumi:dexter:6.2.2")
+    implementation("androidx.media:media:1.6.0")
 }

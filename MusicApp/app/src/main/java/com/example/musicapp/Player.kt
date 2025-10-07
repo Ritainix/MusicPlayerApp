@@ -1,9 +1,13 @@
 package com.example.musicapp
 
+import android.content.ComponentName
+import android.content.Intent
+import android.content.ServiceConnection
 import android.media.MediaPlayer
 import android.net.Uri
 import android.os.Bundle
 import android.os.Handler
+import android.os.IBinder
 import android.widget.Button
 import android.widget.SeekBar
 import android.widget.TextView
@@ -27,15 +31,31 @@ class Player : AppCompatActivity() {
     private lateinit var txtStop: TextView
 
     private lateinit var seekMusic: SeekBar
-
     private var sname: String? = null
     private var position: Int = 0
     private var mySongs: ArrayList<File>? = null
-
     private var updateseekbar: Thread? = null
 
+    // Service
+    private var musicService: MusicPlayerService? = null
+    private var isBound = false
+    private var currentSongPath: String? = null
     companion object {
         var mediaPlayer: MediaPlayer? = null
+    }
+
+    // Connection to the service
+    private val connection = object : ServiceConnection {
+        override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
+            val binder = service as MusicPlayerService.MusicBinder
+            musicService = binder.getService()
+            isBound = true
+        }
+
+        override fun onServiceDisconnected(name: ComponentName?) {
+            isBound = false
+            musicService = null
+        }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -58,7 +78,7 @@ class Player : AppCompatActivity() {
         txtStop = findViewById(R.id.txtsend)
         seekMusic = findViewById(R.id.seekbar)
 
-        //stop previous player
+        // Stop previous player
         mediaPlayer?.let {
             it.stop()
             it.release()
@@ -76,7 +96,7 @@ class Player : AppCompatActivity() {
         txtSName.isSelected = true
         playSong(position)
 
-        //seekbar
+        // Seekbar
         val handler = Handler()
         val delay: Long = 1000
         handler.postDelayed(object : Runnable {
@@ -110,7 +130,6 @@ class Player : AppCompatActivity() {
             }
         }
 
-
         btnNext.setOnClickListener {
             position = if (Shuffle) {
                 (0 until mySongs!!.size).random()
@@ -139,6 +158,10 @@ class Player : AppCompatActivity() {
                 Toast.makeText(this,"Shuffle turned off", Toast.LENGTH_SHORT).show()
             }
         }
+
+        // Bind service
+        val serviceIntent = Intent(this, MusicPlayerService::class.java)
+        bindService(serviceIntent, connection, BIND_AUTO_CREATE)
     }
 
     private fun playSong(pos: Int) {
@@ -146,11 +169,16 @@ class Player : AppCompatActivity() {
         mediaPlayer?.release()
         mediaPlayer=null
 
-        val uri = Uri.fromFile(mySongs!![pos])
+        val file = mySongs!![pos]
+        val uri = Uri.fromFile(file)
         mediaPlayer = MediaPlayer.create(applicationContext, uri)
         mediaPlayer?.start()
 
-        sname = mySongs!![pos].name.substringBeforeLast(".")
+
+
+        currentSongPath = file.absolutePath
+
+        sname = file.name.substringBeforeLast(".")
         txtSName.text = sname
         btnPlay.setBackgroundResource(R.drawable.pause)
 
@@ -167,6 +195,56 @@ class Player : AppCompatActivity() {
             }
             playSong(position)
         }
+    }
+
+    override fun onPause() {
+        super.onPause()
+        // Start service only if music is playing
+        if (mediaPlayer?.isPlaying == true && currentSongPath != null) {
+            val serviceIntent = Intent(this, MusicPlayerService::class.java)
+            serviceIntent.putExtra("songPath", currentSongPath)
+            serviceIntent.putExtra("currentPosition", mediaPlayer?.currentPosition ?: 0)
+            startService(serviceIntent)
+        }
+        mediaPlayer?.let {
+            if (it.isPlaying){
+                it.pause()
+                btnPlay.setBackgroundResource(R.drawable.play)
+            }
+        }
+
+
+        }
+
+    override fun onResume() {
+        super.onResume()
+        // Stop service when app comes to foreground
+        val serviceIntent = Intent(this, MusicPlayerService::class.java)
+        stopService(serviceIntent)
+
+        // Stop MediaPlayer dentro do service explicitamente
+        musicService?.stopMusic()
+
+        // Resume playback in the app
+        mediaPlayer?.start()
+        btnPlay.setBackgroundResource(R.drawable.pause)
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        if (isBound) {
+            unbindService(connection)
+            isBound = false
+        }
+        musicService?.stopMusic()
+        mediaPlayer?.let {
+            if (it.isPlaying) {
+                it.stop()
+            }
+            it.release()
+            mediaPlayer = null
+        }
+        stopService(Intent(this, MusicPlayerService::class.java))
     }
 
     private fun createTime(duration: Int): String {
