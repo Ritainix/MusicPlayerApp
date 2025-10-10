@@ -5,6 +5,7 @@ import android.content.Intent
 import android.content.ServiceConnection
 import android.media.MediaPlayer
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.IBinder
@@ -44,7 +45,7 @@ class Player : AppCompatActivity() {
         var mediaPlayer: MediaPlayer? = null
     }
 
-    // Connection to the service
+    //connect/disconnect the service
     private val connection = object : ServiceConnection {
         override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
             val binder = service as MusicPlayerService.MusicBinder
@@ -78,7 +79,6 @@ class Player : AppCompatActivity() {
         txtStop = findViewById(R.id.txtsend)
         seekMusic = findViewById(R.id.seekbar)
 
-        // Stop previous player
         mediaPlayer?.let {
             it.stop()
             it.release()
@@ -96,7 +96,7 @@ class Player : AppCompatActivity() {
         txtSName.isSelected = true
         playSong(position)
 
-        // Seekbar
+        // Seekbar update
         val handler = Handler()
         val delay: Long = 1000
         handler.postDelayed(object : Runnable {
@@ -107,6 +107,7 @@ class Player : AppCompatActivity() {
                 handler.postDelayed(this, delay)
             }
         }, delay)
+
         seekMusic.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
                 if (fromUser) mediaPlayer?.seekTo(progress)
@@ -131,20 +132,14 @@ class Player : AppCompatActivity() {
         }
 
         btnNext.setOnClickListener {
-            position = if (Shuffle) {
-                (0 until mySongs!!.size).random()
-            } else {
-                (position + 1) % mySongs!!.size
-            }
+            position = if (Shuffle) (0 until mySongs!!.size).random()
+            else (position + 1) % mySongs!!.size
             playSong(position)
         }
 
         btnPrev.setOnClickListener {
-            position = if (Shuffle) {
-                (0 until mySongs!!.size).random()
-            } else {
-                if (position - 1 < 0) mySongs!!.size - 1 else position - 1
-            }
+            position = if (Shuffle) (0 until mySongs!!.size).random()
+            else if (position - 1 < 0) mySongs!!.size - 1 else position - 1
             playSong(position)
         }
 
@@ -167,14 +162,11 @@ class Player : AppCompatActivity() {
     private fun playSong(pos: Int) {
         mediaPlayer?.stop()
         mediaPlayer?.release()
-        mediaPlayer=null
+        mediaPlayer = null
 
         val file = mySongs!![pos]
-        val uri = Uri.fromFile(file)
-        mediaPlayer = MediaPlayer.create(applicationContext, uri)
+        mediaPlayer = MediaPlayer.create(applicationContext, Uri.fromFile(file))
         mediaPlayer?.start()
-
-
 
         currentSongPath = file.absolutePath
 
@@ -188,44 +180,46 @@ class Player : AppCompatActivity() {
         seekMusic.max = duration
 
         mediaPlayer?.setOnCompletionListener {
-            position = if (Shuffle) {
-                (0 until mySongs!!.size).random()
-            } else {
-                (position + 1) % mySongs!!.size
-            }
+            position = if (Shuffle) (0 until mySongs!!.size).random()
+            else (position + 1) % mySongs!!.size
             playSong(position)
         }
     }
 
     override fun onPause() {
         super.onPause()
-        // Start service only if music is playing
-        if (mediaPlayer?.isPlaying == true && currentSongPath != null) {
-            val serviceIntent = Intent(this, MusicPlayerService::class.java)
-            serviceIntent.putExtra("songPath", currentSongPath)
-            serviceIntent.putExtra("currentPosition", mediaPlayer?.currentPosition ?: 0)
-            startService(serviceIntent)
-        }
         mediaPlayer?.let {
-            if (it.isPlaying){
+            if (it.isPlaying) {
+                //pause the activity
                 it.pause()
                 btnPlay.setBackgroundResource(R.drawable.play)
+
+                //pass the music to the service
+                val serviceIntent = Intent(this, MusicPlayerService::class.java)
+                serviceIntent.putExtra("songPath", currentSongPath)
+                serviceIntent.putExtra("currentPosition", it.currentPosition)
+                serviceIntent.putExtra("pos", position)
+                serviceIntent.putStringArrayListExtra(
+                    "playlist",
+                    ArrayList(mySongs?.map { it.absolutePath } ?: emptyList())
+                )
+
+
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    startForegroundService(serviceIntent)
+                } else {
+                    startService(serviceIntent)
+                }
             }
         }
+    }
 
-
-        }
 
     override fun onResume() {
         super.onResume()
-        // Stop service when app comes to foreground
-        val serviceIntent = Intent(this, MusicPlayerService::class.java)
-        stopService(serviceIntent)
-
-        // Stop MediaPlayer dentro do service explicitamente
+        //stop the service music and start the one from the activity
+        stopService(Intent(this, MusicPlayerService::class.java))
         musicService?.stopMusic()
-
-        // Resume playback in the app
         mediaPlayer?.start()
         btnPlay.setBackgroundResource(R.drawable.pause)
     }
@@ -238,9 +232,7 @@ class Player : AppCompatActivity() {
         }
         musicService?.stopMusic()
         mediaPlayer?.let {
-            if (it.isPlaying) {
-                it.stop()
-            }
+            if (it.isPlaying) it.stop()
             it.release()
             mediaPlayer = null
         }
