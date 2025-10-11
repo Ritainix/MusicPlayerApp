@@ -55,7 +55,7 @@ class MusicPlayerService : Service() {
                 songList = ArrayList(playlistPaths.map { File(it) })
             }
             playMusic(File(songPath), currentPos)
-            return START_STICKY
+            return START_STICKY //START_Sticky is from service, it tells to recreate the service after it has enough memory and call onStartCommand() again with a null intent.
         }
 
         when (action) {
@@ -143,11 +143,11 @@ class MusicPlayerService : Service() {
     }
 
     private fun createNotificationChannel() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) { //only creates the channel if it's >=Android 8
             val channel = NotificationChannel(
                 CHANNEL_ID,
                 "Music Channel",
-                NotificationManager.IMPORTANCE_LOW
+                NotificationManager.IMPORTANCE_LOW //IMPORTANCE_LOW is used because if's not an alert notification, so it doesn't make a sound or vibrate
             )
             val manager = getSystemService(NotificationManager::class.java)
             manager.createNotificationChannel(channel)

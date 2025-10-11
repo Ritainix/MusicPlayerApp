@@ -96,9 +96,9 @@ class Player : AppCompatActivity() {
         txtSName.isSelected = true
         playSong(position)
 
-        // Seekbar update
+        //Seekbar update
         val handler = Handler()
-        val delay: Long = 1000
+        val delay: Long = 1000 //1 second
         handler.postDelayed(object : Runnable {
             override fun run() {
                 val currentTime = createTime(mediaPlayer?.currentPosition ?: 0)
@@ -174,10 +174,10 @@ class Player : AppCompatActivity() {
         txtSName.text = sname
         btnPlay.setBackgroundResource(R.drawable.pause)
 
-        val duration = mediaPlayer?.duration ?: 0
+        val duration = mediaPlayer?.duration ?: 0 //gets the total time of the music in ms
         txtStop.text = createTime(duration)
-        seekMusic.progress = 0
-        seekMusic.max = duration
+        seekMusic.progress = 0 //initial
+        seekMusic.max = duration //defines the duration as max (end)
 
         mediaPlayer?.setOnCompletionListener {
             position = if (Shuffle) (0 until mySongs!!.size).random()
