@@ -6,10 +6,8 @@ import android.media.MediaPlayer
 import android.os.Binder
 import android.os.Build
 import android.os.IBinder
-import android.app.Notification
 import androidx.core.app.NotificationCompat
 import androidx.media.app.NotificationCompat.MediaStyle
-
 import java.io.File
 
 class MusicPlayerService : Service() {
@@ -45,15 +43,18 @@ class MusicPlayerService : Service() {
 
         val action = intent?.action
         val songPath = intent?.getStringExtra("songPath")
-        //gets the current position, if it's not exist gets the first song (0), even if it's null the currentPost will still be 0 (?:0)
         val currentPos = intent?.getIntExtra("currentPosition", 0) ?: 0
         val playlistPaths = intent?.getStringArrayListExtra("playlist")
 
-
+        //if there is a song coming from the player
         if (songPath != null) {
             if (playlistPaths != null) {
                 songList = ArrayList(playlistPaths.map { File(it) })
             }
+
+            //gets the song position
+            position = songList.indexOfFirst { it.absolutePath == songPath }
+            if (position == -1) position = 0
             playMusic(File(songPath), currentPos)
             return START_STICKY //START_Sticky is from service, it tells to recreate the service after it has enough memory and call onStartCommand() again with a null intent.
         }
@@ -78,7 +79,6 @@ class MusicPlayerService : Service() {
     }
 
 
-
     fun setPlaylist(list: ArrayList<File>, pos: Int) {
         songList = list
         position = pos
@@ -91,17 +91,21 @@ class MusicPlayerService : Service() {
         mediaPlayer?.isLooping = false
         mediaPlayer?.seekTo(startPos)
         mediaPlayer?.start()
-
         startForeground(NOTIFICATION_ID, createNotification(file.nameWithoutExtension))
-
-        mediaPlayer?.setOnCompletionListener {
-            playNext()
-        }
+        mediaPlayer?.setOnCompletionListener { playNext() }
     }
 
     private fun createNotification(songName: String): Notification {
-        //open intent
-        val openAppIntent = Intent(this, Player::class.java)
+        //in case the action is not recognized
+        val currentFile = songList.getOrNull(position)
+        val openAppIntent = Intent(this, Player::class.java).apply {
+            putExtra("songPath", currentFile?.absolutePath)
+            putExtra("currentPosition", mediaPlayer?.currentPosition ?: 0)
+            putExtra("pos", position)
+            putStringArrayListExtra("songs", ArrayList(songList.map { it.absolutePath }))
+            flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
+        }
+
         val pendingIntent = PendingIntent.getActivity(
             this, 0, openAppIntent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
@@ -109,45 +113,46 @@ class MusicPlayerService : Service() {
 
         //next intent
         val nextIntent = Intent(this, MusicPlayerService::class.java).apply { action = "ACTION_NEXT" }
-        val nextPending = PendingIntent.getService(this, 2, nextIntent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+        val nextPending = PendingIntent.getService(
+            this, 2, nextIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
 
         //previous intent
         val prevIntent = Intent(this, MusicPlayerService::class.java).apply { action = "ACTION_PREV" }
-        val prevPending = PendingIntent.getService(this, 3, prevIntent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+        val prevPending = PendingIntent.getService(
+            this, 3, prevIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
 
         //playpause intent
         val playPauseIntent = Intent(this, MusicPlayerService::class.java).apply { action = "ACTION_PLAY_PAUSE" }
-        val playPausePending = PendingIntent.getService(this, 4, playPauseIntent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+        val playPausePending = PendingIntent.getService(
+            this, 4, playPauseIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
 
-        //buld the notification
+        //build the notification
         return NotificationCompat.Builder(this, CHANNEL_ID)
-            //.setContentTitle("Playing")
-            .setContentText(songList.getOrNull(position)?.nameWithoutExtension ?: "")
+            .setContentTitle(songName)
+            .setContentText(currentFile?.nameWithoutExtension ?: "")
             .setSmallIcon(R.drawable.musiclogo)
             .setContentIntent(pendingIntent)
             .addAction(R.drawable.previous_notification, "Previous", prevPending)
             .addAction(
                 if (mediaPlayer?.isPlaying == true) R.drawable.pause_notification else R.drawable.play_notification,
-                "Play/Pause",
-                playPausePending
+                "Play/Pause", playPausePending
             )
             .addAction(R.drawable.next_notification, "Next", nextPending)
-            .setStyle(MediaStyle().setShowActionsInCompactView(0,1,2))
-
+            .setStyle(MediaStyle().setShowActionsInCompactView(0, 1, 2))
             .setOngoing(true)
             .build()
-
     }
 
     private fun createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) { //only creates the channel if it's >=Android 8
             val channel = NotificationChannel(
-                CHANNEL_ID,
-                "Music Channel",
-                NotificationManager.IMPORTANCE_LOW //IMPORTANCE_LOW is used because if's not an alert notification, so it doesn't make a sound or vibrate
+                CHANNEL_ID, "Music Channel", NotificationManager.IMPORTANCE_LOW //IMPORTANCE_LOW is used because if's not an alert notification, so it doesn't make a sound or vibrate
             )
             val manager = getSystemService(NotificationManager::class.java)
             manager.createNotificationChannel(channel)
@@ -156,16 +161,8 @@ class MusicPlayerService : Service() {
 
     fun togglePlayPause() {
         mediaPlayer?.let {
-            if (it.isPlaying) {
-                it.pause()
-            } else {
-                it.start()
-            }
-
-            startForeground(
-                NOTIFICATION_ID,
-                createNotification(songList.getOrNull(position)?.nameWithoutExtension ?: "")
-            )
+            if (it.isPlaying) it.pause() else it.start()
+            startForeground(NOTIFICATION_ID, createNotification(songList.getOrNull(position)?.nameWithoutExtension ?: ""))
         }
     }
 
@@ -181,12 +178,14 @@ class MusicPlayerService : Service() {
         if (songList.isEmpty()) return
         position = (position + 1) % songList.size
         playMusic(songList[position])
+        startForeground(NOTIFICATION_ID, createNotification(songList[position].nameWithoutExtension))
     }
 
     fun playPrev() {
         if (songList.isEmpty()) return
-        position = if(position - 1 < 0) songList.size - 1 else position - 1
+        position = if (position - 1 < 0) songList.size - 1 else position - 1
         playMusic(songList[position])
+        startForeground(NOTIFICATION_ID, createNotification(songList[position].nameWithoutExtension))
     }
 
     override fun onDestroy() {
@@ -194,6 +193,14 @@ class MusicPlayerService : Service() {
         mediaPlayer?.release()
         mediaPlayer = null
     }
+
+    fun getSongList(): ArrayList<File> = songList
+
+    fun getCurrentPosition(): Int = position
+
+    fun getMediaPlayer(): MediaPlayer? = mediaPlayer
+
 }
+
 
 //https://medium.com/@dugguRK/kotlin-music-foreground-service-play-on-android-4b57b10fe583
