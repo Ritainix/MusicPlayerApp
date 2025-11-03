@@ -27,9 +27,10 @@
             android:singleLine="true"
             android:text="Song Name"
             android:textColor="@color/black"
-            android:textSize="22sp"
-            android:textAlignment="center"
-            android:textStyle="italic"/>
+            android:fontFamily="@font/fs_pixel_sans_unicode_regular"
+            android:textSize="35sp"
+            android:textStyle="bold"
+            android:textAlignment="center" />
 
         <ImageView
             android:id="@+id/imageview"
@@ -44,7 +45,7 @@
         android:layout_height="66dp">
         <SeekBar
             android:id="@+id/seekbar"
-            android:layout_width="250dp"
+            android:layout_width="240dp"
             android:layout_height="wrap_content"
             android:layout_centerInParent="true"
             android:layout_alignParentBottom="true"
@@ -61,7 +62,8 @@
             android:layout_marginLeft="20dp"
             android:text="0:00"
             android:textColor="@color/black"
-            android:textSize="14sp"/>
+            android:fontFamily="@font/fs_pixel_sans_unicode_regular"
+            android:textSize="25sp"/>
 
         <TextView
             android:id="@+id/txtsend"
@@ -73,7 +75,8 @@
             android:layout_marginRight="20dp"
             android:text="3:20"
             android:textColor="@color/black"
-            android:textSize="14sp"/>
+            android:fontFamily="@font/fs_pixel_sans_unicode_regular"
+            android:textSize="25sp" />
     </RelativeLayout>
 
     <LinearLayout
@@ -84,34 +87,36 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent">
             
-            <Button
+            <ImageButton
                 android:id="@+id/playButton"
-                android:layout_width="70dp"
-                android:layout_height="70dp"
+                android:layout_width="65dp"
+                android:layout_height="65dp"
                 android:layout_centerHorizontal="true"
-                android:background="@drawable/play"/>
-            <Button
+
+                android:background="@drawable/play_ritainix"/>
+            <ImageButton
                 android:id="@+id/nextButton"
-                android:layout_width="50dp"
-                android:layout_height="50dp"
+                android:layout_width="65dp"
+                android:layout_height="65dp"
                 android:layout_toRightOf="@id/playButton"
-                android:layout_marginTop="15dp"
-                android:background="@drawable/next"/>
-            <Button
+                android:layout_marginLeft="10dp"
+                android:background="@drawable/next_ritainix"/>
+            <ImageButton
                 android:id="@+id/previousButton"
-                android:layout_width="50dp"
-                android:layout_height="50dp"
+                android:layout_width="65dp"
+                android:layout_height="65dp"
                 android:layout_toLeftOf="@id/playButton"
-                android:layout_marginTop="15dp"
-                android:background="@drawable/previous"/>
-            <Button
+
+                android:layout_marginRight="13dp"
+                android:background="@drawable/previous_ritainix"/>
+            <ImageButton
                 android:id="@+id/shuffleButton"
                 android:layout_toLeftOf="@id/previousButton"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
+                android:layout_width="45dp"
+                android:layout_height="45dp"
                 android:layout_marginTop="20dp"
                 android:layout_marginRight="15dp"
-                android:background="@drawable/shuffleoff"/>
+                android:background="@drawable/shuffleoff_ritainix"/>
 
 
 

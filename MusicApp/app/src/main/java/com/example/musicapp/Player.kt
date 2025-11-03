@@ -10,6 +10,7 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.IBinder
 import android.widget.Button
+import android.widget.ImageButton
 import android.widget.SeekBar
 import android.widget.TextView
 import android.widget.Toast
@@ -21,10 +22,10 @@ import java.io.File
 
 class Player : AppCompatActivity() {
 
-    private lateinit var btnPlay: Button
-    private lateinit var btnNext: Button
-    private lateinit var btnPrev: Button
-    private lateinit var btnShuffle: Button
+    private lateinit var btnPlay: ImageButton
+    private lateinit var btnNext: ImageButton
+    private lateinit var btnPrev: ImageButton
+    private lateinit var btnShuffle: ImageButton
     private var Shuffle = false
     private lateinit var txtSName: TextView
     private lateinit var txtStart: TextView
@@ -140,10 +141,10 @@ class Player : AppCompatActivity() {
             mediaPlayer?.let {
                 if (it.isPlaying) {
                     it.pause()
-                    btnPlay.setBackgroundResource(R.drawable.play)
+                    btnPlay.setBackgroundResource(R.drawable.play_ritainix)
                 } else {
                     it.start()
-                    btnPlay.setBackgroundResource(R.drawable.pause)
+                    btnPlay.setBackgroundResource(R.drawable.pause_ritainix)
                 }
             }
         }
@@ -161,10 +162,10 @@ class Player : AppCompatActivity() {
         btnShuffle.setOnClickListener {
             Shuffle = !Shuffle
             if (Shuffle) {
-                btnShuffle.setBackgroundResource(R.drawable.shuffleon)
+                btnShuffle.setBackgroundResource(R.drawable.shuffleon_ritainix)
                 Toast.makeText(this,"Shuffle turned on", Toast.LENGTH_SHORT).show()
             } else {
-                btnShuffle.setBackgroundResource(R.drawable.shuffleoff)
+                btnShuffle.setBackgroundResource(R.drawable.shuffleoff_ritainix)
                 Toast.makeText(this,"Shuffle turned off", Toast.LENGTH_SHORT).show()
             }
         }
@@ -184,7 +185,7 @@ class Player : AppCompatActivity() {
         currentSongPath = file.absolutePath
         sname = file.name.substringBeforeLast(".")
         txtSName.text = sname
-        btnPlay.setBackgroundResource(R.drawable.pause)
+        btnPlay.setBackgroundResource(R.drawable.pause_ritainix)
         val duration = mediaPlayer?.duration ?: 0 //gets the total time of the music in ms
         txtStop.text = createTime(duration)
         seekMusic.progress = 0 //initial
@@ -201,7 +202,7 @@ class Player : AppCompatActivity() {
             if (it.isPlaying) {
                 //pause the activity
                 it.pause()
-                btnPlay.setBackgroundResource(R.drawable.play)
+                btnPlay.setBackgroundResource(R.drawable.play_ritainix)
 
                 //pass the music to the service
                 val serviceIntent = Intent(this, MusicPlayerService::class.java)
@@ -246,7 +247,7 @@ class Player : AppCompatActivity() {
                 txtStop.text = createTime(duration)
                 seekMusic.max = duration
                 seekMusic.progress = mediaPlayer?.currentPosition ?: 0
-                btnPlay.setBackgroundResource(R.drawable.pause)
+                btnPlay.setBackgroundResource(R.drawable.pause_ritainix)
 
                 position = service.getCurrentPosition()
                 currentSongPath = currentFile.absolutePath
