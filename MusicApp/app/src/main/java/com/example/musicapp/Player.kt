@@ -209,6 +209,7 @@ class Player : AppCompatActivity() {
                 serviceIntent.putExtra("songPath", currentSongPath)
                 serviceIntent.putExtra("currentPosition", it.currentPosition)
                 serviceIntent.putExtra("pos", position)
+                serviceIntent.putExtra("paused", true)
                 serviceIntent.putStringArrayListExtra(
                     "playlist",
                     ArrayList(mySongs?.map { it.absolutePath } ?: emptyList())

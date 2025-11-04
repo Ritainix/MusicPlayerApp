@@ -5,4 +5,12 @@
     <color name="primarycolor">#613287</color>
     <color name="primarycolordark">#3c1e54</color>
     <color name="coloraccent">#65497a</color>
+    <color name="player_background">#9055a6</color>
+    <color name="light_yellow">#F0E68A</color>
+    <color name="lilac">#DFC4E3</color>
+    <color name="purple">#a978b0</color>
+    <color name="notification_background">#724399</color>
+
+
+
 </resources>

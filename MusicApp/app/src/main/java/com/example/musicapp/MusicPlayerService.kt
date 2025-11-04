@@ -6,7 +6,9 @@ import android.media.MediaPlayer
 import android.os.Binder
 import android.os.Build
 import android.os.IBinder
+import android.widget.RemoteViews
 import androidx.core.app.NotificationCompat
+import androidx.core.graphics.drawable.IconCompat
 import androidx.media.app.NotificationCompat.MediaStyle
 import java.io.File
 
@@ -31,6 +33,7 @@ class MusicPlayerService : Service() {
     //return the binder
     override fun onBind(intent: Intent?): IBinder = binder
 
+
     //create de service
     override fun onCreate() {
         super.onCreate()
@@ -45,6 +48,8 @@ class MusicPlayerService : Service() {
         val songPath = intent?.getStringExtra("songPath")
         val currentPos = intent?.getIntExtra("currentPosition", 0) ?: 0
         val playlistPaths = intent?.getStringArrayListExtra("playlist")
+        val isPaused = intent?.getBooleanExtra("paused", false) ?: false
+
 
         //if there is a song coming from the player
         if (songPath != null) {
@@ -55,7 +60,16 @@ class MusicPlayerService : Service() {
             //gets the song position
             position = songList.indexOfFirst { it.absolutePath == songPath }
             if (position == -1) position = 0
-            playMusic(File(songPath), currentPos)
+            if (isPaused) {
+                // criar notificação mas não tocar
+                mediaPlayer = MediaPlayer.create(this, android.net.Uri.fromFile(File(songPath)))
+                mediaPlayer?.seekTo(currentPos)
+                // NÃO FAZ start()
+                startForeground(NOTIFICATION_ID, createNotification(File(songPath).nameWithoutExtension))
+            } else {
+                playMusic(File(songPath), currentPos) // toca normalmente
+            }
+
             return START_STICKY //START_Sticky is from service, it tells to recreate the service after it has enough memory and call onStartCommand() again with a null intent.
         }
 
@@ -68,7 +82,7 @@ class MusicPlayerService : Service() {
                 val notification = NotificationCompat.Builder(this, CHANNEL_ID)
                     .setContentTitle("Music Player")
                     .setContentText("Starting...")
-                    .setSmallIcon(R.drawable.musiclogo)
+                    .setSmallIcon(R.drawable.musicicone_ritainix)
                     .setOngoing(true)
                     .build()
                 startForeground(NOTIFICATION_ID, notification)
@@ -96,8 +110,8 @@ class MusicPlayerService : Service() {
     }
 
     private fun createNotification(songName: String): Notification {
-        //in case the action is not recognized
-        val currentFile = songList.getOrNull(position)
+
+        val currentFile = songList.getOrNull(position) //in case the action is not recognized
         val openAppIntent = Intent(this, Player::class.java).apply {
             putExtra("songPath", currentFile?.absolutePath)
             putExtra("currentPosition", mediaPlayer?.currentPosition ?: 0)
@@ -111,43 +125,51 @@ class MusicPlayerService : Service() {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
-        //next intent
-        val nextIntent = Intent(this, MusicPlayerService::class.java).apply { action = "ACTION_NEXT" }
-        val nextPending = PendingIntent.getService(
-            this, 2, nextIntent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        )
+        val controls = RemoteViews(packageName, R.layout.notification_controls)
+        controls.setTextViewText(R.id.txtTitle, songName)
 
         //previous intent
-        val prevIntent = Intent(this, MusicPlayerService::class.java).apply { action = "ACTION_PREV" }
-        val prevPending = PendingIntent.getService(
-            this, 3, prevIntent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        controls.setOnClickPendingIntent(
+            R.id.btnPrev,
+            PendingIntent.getService(this, 3, Intent(this, MusicPlayerService::class.java).apply {
+                action = "ACTION_PREV"
+            }, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
         )
 
-        //playpause intent
-        val playPauseIntent = Intent(this, MusicPlayerService::class.java).apply { action = "ACTION_PLAY_PAUSE" }
-        val playPausePending = PendingIntent.getService(
-            this, 4, playPauseIntent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        // Play/Pause
+        controls.setOnClickPendingIntent(
+            R.id.btnPlayPause,
+            PendingIntent.getService(this, 4, Intent(this, MusicPlayerService::class.java).apply {
+                action = "ACTION_PLAY_PAUSE"
+            }, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
         )
 
-        //build the notification
+        //next intent
+        controls.setOnClickPendingIntent(
+            R.id.btnNext,
+            PendingIntent.getService(this, 2, Intent(this, MusicPlayerService::class.java).apply {
+                action = "ACTION_NEXT"
+            }, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+        )
+
+        val playIcon = if (mediaPlayer?.isPlaying == true)
+            R.drawable.pausenotification_ritainix
+        else
+            R.drawable.playnotification_ritainix
+
+        controls.setImageViewResource(R.id.btnPlayPause, playIcon)
+
         return NotificationCompat.Builder(this, CHANNEL_ID)
-            .setContentTitle(songName)
-            .setContentText(currentFile?.nameWithoutExtension ?: "")
-            .setSmallIcon(R.drawable.musiclogo)
+            .setSmallIcon(R.drawable.musicicone_ritainix)
+            .setContentTitle("")
+            .setCustomContentView(controls)
             .setContentIntent(pendingIntent)
-            .addAction(R.drawable.previous_notification, "Previous", prevPending)
-            .addAction(
-                if (mediaPlayer?.isPlaying == true) R.drawable.pause_notification else R.drawable.play_notification,
-                "Play/Pause", playPausePending
-            )
-            .addAction(R.drawable.next_notification, "Next", nextPending)
-            .setStyle(MediaStyle().setShowActionsInCompactView(0, 1, 2))
             .setOngoing(true)
             .build()
     }
+
+
+
 
     private fun createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) { //only creates the channel if it's >=Android 8

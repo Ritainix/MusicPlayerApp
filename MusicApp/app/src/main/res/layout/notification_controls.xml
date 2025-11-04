@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:padding="8dp">
+
+    <TextView
+        android:id="@+id/txtTitle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:ellipsize="marquee"
+        android:singleLine="true"
+        android:marqueeRepeatLimit="marquee_forever"
+        android:textSize="18sp"
+        android:textColor="@color/player_background"
+        android:gravity="left"
+        android:paddingLeft="10dp"
+        android:fontFamily="@font/fs_pixel_sans_unicode_regular"
+        android:layout_marginBottom="10dp"
+        android:text="Song Title" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center"
+        android:paddingTop="6dp">
+
+        <ImageView
+            android:id="@+id/btnPrev"
+            android:layout_width="38dp"
+            android:layout_height="38dp"
+            android:src="@drawable/previousnotification_ritainix" />
+
+        <ImageView
+            android:id="@+id/btnPlayPause"
+            android:layout_width="38dp"
+            android:layout_height="38dp"
+            android:src="@drawable/playnotification_ritainix"
+            android:layout_marginLeft="10dp"
+            android:layout_marginRight="10dp"/>
+
+        <ImageView
+            android:id="@+id/btnNext"
+            android:layout_width="38dp"
+            android:layout_height="38dp"
+            android:src="@drawable/nextnotification_ritainix" />
+
+    </LinearLayout>
+
+</LinearLayout>
+
